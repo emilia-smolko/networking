@@ -1,0 +1,215 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: "Networking Demo - lab2 - TGW environment. "
+
+Parameters:
+  NetworkAStack:
+    Type: String
+    Default: Lab3a-VPCA-I13XFO8I9OJ3
+  VPCaCIDR:
+    Type: String
+    Default: 10.64.0.0/16
+  NetworkBStack:
+    Type: String
+    Default: Lab3a-VPCB-1TVWGZ6ZSE6WG
+  VPCbCIDR:
+    Type: String
+    Default: 10.65.0.0/16
+  NetworkCStack:
+    Type: String
+    Default: Lab3a-VPCC-SV54D6EPW77
+  VPCcCIDR:
+    Type: String
+    Default: 10.66.0.0/16
+
+  AvailabilityZoneA: 
+    Type: AWS::EC2::AvailabilityZone::Name
+    Default: eu-west-1a
+  AvailabilityZoneB: 
+    Type: AWS::EC2::AvailabilityZone::Name
+    Default: eu-west-1b
+
+Resources:
+  TransitGateway:
+    Type: "AWS::EC2::TransitGateway"
+    Properties:
+      AmazonSideAsn: 64512
+      Description: "TGW Route Integration Test"
+      AutoAcceptSharedAttachments: "disable"
+      DefaultRouteTableAssociation: "enable"
+      DnsSupport: "enable"
+      VpnEcmpSupport: "enable"
+      Tags:
+      - Key: Name
+        Value: !Join [ '', [ 'TransitGateway-', !Ref 'AWS::StackName' ] ]
+
+  VPCASubnetA:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !ImportValue
+        'Fn::Sub': '${NetworkAStack}-VPC'
+      CidrBlock: !Select [4, !Cidr [!Ref 'VPCaCIDR', 6, 8]]
+      AvailabilityZone:
+        Ref: AvailabilityZoneA
+      MapPublicIpOnLaunch: false
+      Tags:
+        - Key: Name
+          Value: "VPC-A TGW SubnetA"
+  VPCASubnetB:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !ImportValue
+        'Fn::Sub': '${NetworkAStack}-VPC'
+      CidrBlock: !Select [5, !Cidr [!Ref 'VPCaCIDR', 6, 8]]
+      AvailabilityZone:
+        Ref: AvailabilityZoneB
+      MapPublicIpOnLaunch: false
+      Tags:
+        - Key: Name
+          Value: "VPC-A TGW SubnetB"
+  VPCBSubnetA:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !ImportValue
+        'Fn::Sub': '${NetworkBStack}-VPC'
+      CidrBlock: !Select [4, !Cidr [!Ref 'VPCbCIDR', 6, 8]]
+      AvailabilityZone:
+        Ref: AvailabilityZoneA
+      MapPublicIpOnLaunch: false
+      Tags:
+        - Key: Name
+          Value: "VPC-B TGW SubnetA"
+  VPCBSubnetB:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !ImportValue
+        'Fn::Sub': '${NetworkBStack}-VPC'
+      CidrBlock: !Select [5, !Cidr [!Ref 'VPCbCIDR', 6, 8]]
+      AvailabilityZone:
+        Ref: AvailabilityZoneB
+      MapPublicIpOnLaunch: false
+      Tags:
+        - Key: Name
+          Value: "VPC-B TGW SubnetB"
+  VPCCSubnetA:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !ImportValue
+        'Fn::Sub': '${NetworkCStack}-VPC'
+      CidrBlock: !Select [4, !Cidr [!Ref 'VPCcCIDR', 6, 8]]
+      AvailabilityZone:
+        Ref: AvailabilityZoneA
+      MapPublicIpOnLaunch: false
+      Tags:
+        - Key: Name
+          Value: "VPC-C TGW SubnetA"
+  VPCCSubnetB:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !ImportValue
+        'Fn::Sub': '${NetworkCStack}-VPC'
+      CidrBlock: !Select [5, !Cidr [!Ref 'VPCcCIDR', 6, 8]]
+      AvailabilityZone:
+        Ref: AvailabilityZoneB
+      MapPublicIpOnLaunch: false
+      Tags:
+        - Key: Name
+          Value: "VPC-C TGW SubnetB"
+  TGWAAttachement:
+    Type: AWS::EC2::TransitGatewayAttachment
+    Properties: 
+      SubnetIds: 
+      - Ref: VPCASubnetA
+      - Ref: VPCASubnetB
+      TransitGatewayId: 
+        Ref: TransitGateway
+      VpcId: !ImportValue
+        'Fn::Sub': '${NetworkAStack}-VPC'
+      Tags:
+        - Key: Name
+          Value: "VPC-A TGW Attachement"
+  TGWBAttachement:
+    Type: AWS::EC2::TransitGatewayAttachment
+    Properties: 
+      SubnetIds: 
+      - Ref: VPCBSubnetA
+      - Ref: VPCBSubnetB
+      TransitGatewayId: 
+        Ref: TransitGateway
+      VpcId: !ImportValue
+        'Fn::Sub': '${NetworkBStack}-VPC'
+      Tags:
+        - Key: Name
+          Value: "VPC-B TGW Attachement"
+  TGWCAttachement:
+    Type: AWS::EC2::TransitGatewayAttachment
+    Properties: 
+      SubnetIds: 
+      - Ref: VPCCSubnetA
+      - Ref: VPCCSubnetB
+      TransitGatewayId:
+        Ref: TransitGateway
+      VpcId: !ImportValue
+        'Fn::Sub': '${NetworkCStack}-VPC'
+      Tags:
+        - Key: Name
+          Value: "VPC-C TGW Attachement"
+  TGWACRoutePrivate:
+    Type: AWS::EC2::Route
+    DependsOn: TGWAAttachement
+    Properties:
+      DestinationCidrBlock: !Ref 'VPCcCIDR'
+      TransitGatewayId:
+        Ref: TransitGateway
+      RouteTableId:
+        !ImportValue
+        'VPC-A-PrivateRouteTable' 
+  TGWABRoutePrivate:
+    Type: AWS::EC2::Route
+    DependsOn: TGWAAttachement
+    Properties:
+      DestinationCidrBlock: !Ref 'VPCbCIDR'
+      TransitGatewayId:
+        Ref: TransitGateway
+      RouteTableId:
+        !ImportValue
+        'VPC-A-PrivateRouteTable' 
+  TGWBARoutePrivate:
+    Type: AWS::EC2::Route
+    DependsOn: TGWBAttachement
+    Properties:
+      DestinationCidrBlock: !Ref 'VPCaCIDR'
+      TransitGatewayId:
+        Ref: TransitGateway
+      RouteTableId:
+        !ImportValue
+        'VPC-B-PrivateRouteTable' 
+  TGWBCRoutePrivate:
+    Type: AWS::EC2::Route
+    DependsOn: TGWBAttachement
+    Properties:
+      DestinationCidrBlock: !Ref 'VPCcCIDR'
+      TransitGatewayId:
+        Ref: TransitGateway
+      RouteTableId:
+        !ImportValue
+        'VPC-B-PrivateRouteTable' 
+  TGWCARoutePrivate:
+    Type: AWS::EC2::Route
+    DependsOn: TGWCAttachement
+    Properties:
+      DestinationCidrBlock: !Ref 'VPCaCIDR'
+      TransitGatewayId:
+        Ref: TransitGateway
+      RouteTableId:
+        !ImportValue
+        'VPC-C-PrivateRouteTable'  
+  TGWCBRoutePrivate:
+    Type: AWS::EC2::Route
+    DependsOn: TGWCAttachement
+    Properties:
+      DestinationCidrBlock: !Ref 'VPCbCIDR'
+      TransitGatewayId:
+        Ref: TransitGateway
+      RouteTableId:
+        !ImportValue
+        'VPC-C-PrivateRouteTable'                  

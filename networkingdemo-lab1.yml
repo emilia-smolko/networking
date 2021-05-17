@@ -1,5 +1,5 @@
 AWSTemplateFormatVersion: "2010-09-09"
-Description: "Networking Demo - Single VPC with IGW"
+Description: "Networking Demo - lab1 - Single VPC with IGW"
 
 Metadata:
   "AWS::CloudFormation::Interface":
@@ -10,6 +10,7 @@ Metadata:
           - AvailabilityZoneA
           - AvailabilityZoneB
           - VPCCIDR
+          - VPCNAME
 
 Parameters:
   AvailabilityZoneA:
@@ -25,7 +26,6 @@ Parameters:
     Description: Provide a/16 CIDR space.
     Default: 10.65.0.0/16
     AllowedValues:
-      - "10.0.0.0/16"
       - "10.1.0.0/16"
       - "10.2.0.0/16"
       - "10.3.0.0/16"
@@ -34,6 +34,10 @@ Parameters:
       - "10.65.0.0/16"
       - "10.66.0.0/16"
       - "10.67.0.0/16"
+  VPCNAME:
+    Type: String
+    Description: Provide name for VPC.
+    Default: VPC-A
 
 Mappings:
   RegionMap:
@@ -53,12 +57,7 @@ Resources:
       InstanceTenancy: default
       Tags:
         - Key: Name
-          Value: !Join
-            - ""
-            - - Ref: "AWS::StackName"              
-        - Key: project
-          Value: Networking Demo
-
+          Value: !Ref VPCNAME
   VPCPrivateSubnetA:
     Type: AWS::EC2::Subnet
     Properties:
@@ -72,7 +71,7 @@ Resources:
         - Key: Name
           Value: !Join
             - ""
-            - - Ref: "AWS::StackName"
+            - - Ref: "VPCNAME"
               - "-"
               - "PrivateA Subnet"
 
@@ -89,7 +88,7 @@ Resources:
         - Key: Name
           Value: !Join
             - ""
-            - - Ref: "AWS::StackName"
+            - - Ref: "VPCNAME"
               - "-"
               - "PrivateB Subnet"
 
@@ -102,7 +101,7 @@ Resources:
         - Key: Name
           Value: !Join
             - ""
-            - - Ref: "AWS::StackName"
+            - - Ref: "VPCNAME"
               - "-"
               - "Private Route Table"
 
@@ -127,7 +126,7 @@ Resources:
     Properties:
       RoleName: !Join
         - ""
-        - - Ref: "AWS::StackName"
+        - - Ref: "VPCNAME"
           - "-"
           - "SSMRole"
           - "-"
@@ -159,7 +158,7 @@ Resources:
       GroupDescription: Open-up ports for ICMP and SSH from 10.x.x.x
       GroupName: !Join
         - ""
-        - - Ref: "AWS::StackName"
+        - - Ref: "VPCNAME"
           - "-"
           - "EC2-SG"
       VpcId:
@@ -201,7 +200,7 @@ Resources:
         - Key: Name
           Value: !Join
             - ""
-            - - Ref: "AWS::StackName"
+            - - Ref: "VPCNAME"
               - "-"
               - "WebServer"
       UserData:
@@ -242,7 +241,7 @@ Resources:
         - Key: Name
           Value: !Join
             - ""
-            - - Ref: "AWS::StackName"
+            - - Ref: "VPCNAME"
               - "-"
               - "PublicA Subnet"
 
@@ -259,7 +258,7 @@ Resources:
         - Key: Name
           Value: !Join
             - ""
-            - - Ref: "AWS::StackName"
+            - - Ref: "VPCNAME"
               - "-"
               - "PublicB Subnet"
 
@@ -272,7 +271,7 @@ Resources:
         - Key: Name
           Value: !Join
             - ""
-            - - Ref: "AWS::StackName"
+            - - Ref: "VPCNAME"
               - "-"
               - "Public Route Table"
 
@@ -299,7 +298,7 @@ Resources:
         - Key: Name
           Value: !Join
             - ""
-            - - Ref: "AWS::StackName"
+            - - Ref: "VPCNAME"
               - "-"
               - "IGW"
 
@@ -340,7 +339,7 @@ Resources:
         - Key: Name
           Value: !Join
             - ""
-            - - Ref: "AWS::StackName"
+            - - Ref: "VPCNAME"
               - "-"
               - "NAT Gateway"
 
@@ -355,46 +354,33 @@ Resources:
         Ref: VPCPrivateSubnetRouteTable
 
 Outputs:
-  # VPC Outputs
-
-  VPC:
-    Description: "VPC"
+  vpc:
     Value: !Ref VPC
     Export:
-      Name: !Sub "VPC-${AWS::StackName}-VPC"
-  VPCPrivateSubnetA:
-    Description: "VPC Private Subnet A"
-    Value: !Ref VPCPrivateSubnetA
-    Export:
-      Name: !Sub "VPC-${AWS::StackName}-PrivateSubnetA"
-  VPCPrivateSubnetB:
-    Description: "VPC Private Subnet B"
-    Value: !Ref VPCPrivateSubnetB
-    Export:
-      Name: !Sub "VPC-${AWS::StackName}-PrivateSubnetB"
-
+      Name:
+        'Fn::Sub': '${VPCNAME}-VPC'
   VPCPrivateSubnetRouteTable:
     Description: "VPC Private Route Table"
     Value: !Ref VPCPrivateSubnetRouteTable
     Export:
-      Name: !Sub "VPC-${AWS::StackName}-PrivateRouteTable"
+      Name: !Sub "${VPCNAME}-PrivateRouteTable"
   VPCPublicSubnetRouteTable:
     Description: "VPC Public Route Table"
     Value: !Ref VPCPublicSubnetRouteTable
     Export:
-      Name: !Sub "VPC-${AWS::StackName}-PublicRouteTable"
+      Name: !Sub "${VPCNAME}-PublicRouteTable"
   VPCServer:
     Description: "VPC EC2 IP address"
     Value: !GetAtt VPCServerEc2.PrivateIp
     Export:
-      Name: !Sub "VPC-${AWS::StackName}-ServerIP"
+      Name: !Sub "${VPCNAME}-ServerIP"
   VPCPublicSubnetADCS1:
     Description: "VPC Public Subnet A"
     Value: !Ref VPCPublicSubnetA
     Export:
-      Name: !Sub "VPC-${AWS::StackName}-PublicSubnetA"
+      Name: !Sub "${VPCNAME}-PublicSubnetA"
   VPCPublicSubnetBDCS1:
     Description: "VPC Public Subnet B"
     Value: !Ref VPCPublicSubnetB
     Export:
-      Name: !Sub "VPC-${AWS::StackName}-PublicSubnetB"
+      Name: !Sub "${VPCNAME}-PublicSubnetB"

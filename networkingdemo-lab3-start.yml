@@ -1,0 +1,112 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: Networking Demo - lab3 - starting point
+
+Metadata:
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+      - Label:
+          default: Modules
+        Parameters: 
+            - OnPremSimulationStack
+            - InCloudVpcStack
+            - TransitGatewayStack
+    ParameterLabels:
+      OnPremSimulationStack:
+        default: Podaj URL pliku z konfiguracja symulacji on-prem.
+      InCloudVpcStack:
+        default: Podaj URL pliku z konfiguracja VPC.
+      TransitGatewayStack:
+        default: Podaj URL pliku z konfiguracja transitgateway.
+
+Parameters:
+  OnPremSimulationStack:
+    Description: URL pliku z konfiguracja symulacji on-prem
+    Type: String
+    Default: 'https://BUCKET.s3-eu-west-1.amazonaws.com/networkingdemo-lab3-on-prem.yml'
+  InCloudVpcStack:
+    Description: URL pliku z konfiguracja VPC
+    Type: String
+    Default: 'https://BUCKET.s3-eu-west-1.amazonaws.com/networkingdemo-lab1.yml'
+  TransitGatewayStack:
+    Description: URL pliku z konfiguracja TransitGateway
+    Type: String
+    Default: 'https://BUCKET.s3-eu-west-1.amazonaws.com/networkingdemo-lab2-transitgateway.yml'
+  AvailabilityZoneA:
+    Description: Availability Zone 1
+    Type: AWS::EC2::AvailabilityZone::Name
+    Default: eu-west-1a
+  AvailabilityZoneB:
+    Description: Availability Zone 2
+    Type: AWS::EC2::AvailabilityZone::Name
+    Default: eu-west-1b
+  SshAccessIP:  
+    AllowedPattern: ^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])(\/([0-9]|[1-2][0-9]|3[0-2]))$
+    Description: Zakres CIDR udostępniony dla SSH do maszyny Bastion.
+    Type: String
+    Default: 0.0.0.0/0
+
+Resources:
+  VPCA:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: !Ref InCloudVpcStack
+      TimeoutInMinutes: 15
+      Parameters:
+        AvailabilityZoneA: !Ref AvailabilityZoneA
+        AvailabilityZoneB: !Ref AvailabilityZoneB
+        VPCCIDR: 10.64.0.0/16
+        VPCNAME: 'VPC-A'
+  VPCB:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: !Ref InCloudVpcStack
+      TimeoutInMinutes: 15
+      Parameters:
+        AvailabilityZoneA: !Ref AvailabilityZoneA
+        AvailabilityZoneB: !Ref AvailabilityZoneB
+        VPCCIDR: 10.65.0.0/16
+        VPCNAME: 'VPC-B'
+  VPCC:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: !Ref InCloudVpcStack
+      TimeoutInMinutes: 15
+      Parameters:
+        AvailabilityZoneA: !Ref AvailabilityZoneA
+        AvailabilityZoneB: !Ref AvailabilityZoneB
+        VPCCIDR: 10.66.0.0/16
+        VPCNAME: 'VPC-C'
+
+  TransitGateway:
+    Type: AWS::CloudFormation::Stack
+    DependsOn: 
+     - VPCA
+     - VPCB
+     - VPCC
+    Properties:
+      TemplateURL: !Ref TransitGatewayStack
+      TimeoutInMinutes: 30
+      Parameters:
+        NetworkAStack: VPC-A
+        VPCaCIDR: 10.64.0.0/16
+        NetworkBStack: VPC-B
+        VPCbCIDR: 10.65.0.0/16
+        NetworkCStack: VPC-C
+        VPCcCIDR: 10.66.0.0/16
+  OnPrem:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: !Ref OnPremSimulationStack
+      TimeoutInMinutes: 30
+      Parameters:
+        SshAccessCidr: !Ref SshAccessIP
+
+Outputs:
+  BastionPublicIp:
+    Description: Publiczne IP maszyny Bastion
+    Value: !GetAtt OnPrem.Outputs.PublicIp
+  AppServerPrivateIp:
+    Value: !GetAtt OnPrem.Outputs.AppServerPrivateIp
+  DnsServerPrivateIp:
+    Value: !GetAtt OnPrem.Outputs.DnsServerPrivateIp
+

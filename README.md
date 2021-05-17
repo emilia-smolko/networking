@@ -10,5 +10,8 @@ Pierwsze ćwiczenie pokaże ci jak skonfigurować podsieci w VPC i podłączenie
 ## VPC Peering Connection, Transit Gateway
 Drugie ćwiczenie to następny krok. Nauczysz się tutaj łączyć pomiędzy VPC z użyciem Peering Connection i Transit Gateway.<br>
 [Ćwiczenie 2](https://github.com/emilia-smolko/networking/blob/main/Lab2.pdf)
+## VPN-Site-to-Site && Transit Gateway
+Trzecie ćwiczenie. Przetestujesz tutaj jak łączyć wiele VPC z lokalnym środowiskiem.<br>
+[Ćwiczenie 3](https://github.com/emilia-smolko/networking/blob/main/Lab3.pdf)
 ## License
 [MIT](https://github.com/emilia-smolko/networking/blob/main/LICENSE)

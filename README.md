@@ -21,5 +21,8 @@ Piąte ćwiczenie. Bazowe środowisko do konfiguracji powołasz ze skryptów tut
 ## FlowLogs in CloudWatch, Alarms, CloudTrail
 Szóste ćwiczenie. Środowisko do monitorowania to konfiguracja po ćwiczeniu numer 5. Skonfigurujesz logowanie ruchu sieciowego w VPC i po wygenerowaniu ruchu zapoznasz się z dostępnymi informacjami w CloudWatch. Ustawisz automatyczne powiadomienie na przekroczenie wybranej metryki z interfejsu sieciowego. <br>
 [Ćwiczenie 6](https://github.com/emilia-smolko/networking/blob/main/Lab6.pdf)
+## CloudFront
+Siódme ćwiczenie. Testujemy CloudFront publikując stronę umieszczoną w S3. <br>
+
 ## License
 [MIT](https://github.com/emilia-smolko/networking/blob/main/LICENSE)
